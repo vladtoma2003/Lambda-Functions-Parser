@@ -13,11 +13,12 @@ free_vars =
 
 -- TODO 1.2. reduce a redex
 -- reduce e1 x e2 : inlocuieste x din e1 cu e2
+-- e1 x e2 -> e1[x/e2]
 reduce :: Expr -> String -> Expr -> Expr
 reduce = 
     \e1 x e2 -> case e1 of
         (Variable y) -> if x == y then e2 else e1
-        (Function y e) -> if x == y then e1  else Function y (reduce e x e2)
+        (Function y e) -> if x == y then e1 else Function y (reduce e x e2) -- \y.e x e2 -> \y.e[x/e2]
         (Application e3 e4) -> Application (reduce e3 x e2) (reduce e4 x e2)
 
 -- Normal Evaluation
