@@ -29,7 +29,7 @@ reduce =
         (Function y e) ->
             if x == y then e1 else Function y (reduce e x e2)
     -- \x.(e3 e4) e2 -> (e3 e4)[x/e2] -> e3[x/e2] e4[x/e2] -> \x.(e3[x/e2] e4[x/e2]) e2 -> \x.(e3[x/e2] e4[x/e2]) e2
-    -- trebuie inlocuit y din e3 cu a
+    -- trebuie inlocuite variabilele din e1 care sunt libere in e2 cu unele noi, nefolosite
         (Application e3 e4) ->
             Application (reduce e3 x e2) (reduce e4 x e2)
 
