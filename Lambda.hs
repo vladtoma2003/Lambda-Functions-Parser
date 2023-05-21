@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant lambda" #-}
 {-# HLINT ignore "Use camelCase" #-}
+{-# LANGUAGE LambdaCase #-}
 module Lambda where
 
 import Expr
@@ -24,14 +25,14 @@ reduce (Variable y) x e2 =
             if x == y then e2 else Variable y
     -- \x.(\y.e) e2 -> (\y.e)[x/e2] -> \y.e[x/e2] -> \x.\y.e[x/e2]; \x.e[x/e2]
 
-reduce (Function y e) x e2 =
-            if x == y then (Function y e) 
-            else if(notElem y (free_vars e2)) then
-                    Function y (reduce e x e2)
-                else
-                    reduce (Function z (reduce e y (Variable z))) x e2
-                    where z = head (concatMap (\n -> sequence (take n (tails ['a'..'z']))) [1..] 
-                                \\ (union (free_vars (Function y e)) (free_vars e2)))
+reduce (Function y e) x e2
+  | x == y = (Function y e)
+  | (notElem y (free_vars e2)) = Function y (reduce e x e2)
+  | otherwise = reduce (Function z (reduce e y (Variable z))) x e2
+  where
+      z = head
+            (concatMap (\ n -> sequence (take n (tails ['a' .. 'z']))) [1 .. ]
+               \\ (union (free_vars (Function y e)) (free_vars e2)))
                                 -- generez o lista infinita de valori libere si iau capul acesteia
                                 -- pentru a inlocui variabilele libere (pt capturarea variabilelor).
 
@@ -44,34 +45,50 @@ reduce (Application e3 e4) x e2 =
 -- Normal Evaluation
 -- TODO 1.3. perform one step of Normal Evaluation (de la stanga la dreapta)
 stepN :: Expr -> Expr
-stepN = 
-    \s -> case s of
-        (Variable x) -> Variable x
-        (Function x e) -> Function x e
-        (Application e1 e2) -> case e1 of
-            (Variable x) -> Application e1 e2
-            (Function x e) -> reduce e x e2
-            (Application e3 e4) -> Application (stepN e1) e2
+stepN (Variable x) = Variable x
+stepN (Function x e) = Function x (stepN e) 
+stepN expr
+    | Application (Function x e1) e2 <- expr = reduce e1 x e2
+    | Application e1 e2 <- expr = 
+        if stepN e1 == e1 then Application e1 (stepN e2) 
+        else Application (stepN e1) e2
+        
 
 -- TODO 1.4. perform Normal Evaluation
 reduceN :: Expr -> Expr
-reduceN = undefined
-    
+reduceN expr 
+    | stepN expr == expr = expr
+    | otherwise = reduceN (stepN expr)
 
 reduceAllN :: Expr -> [Expr]
-reduceAllN = undefined
+reduceAllN expr
+    | stepN expr == expr = [expr]
+    | otherwise = expr : reduceAllN (stepN expr)
 
 -- Applicative Evaluation
 -- TODO 1.5. perform one step of Applicative Evaluation
 stepA :: Expr -> Expr
-stepA = undefined
+stepA (Variable x) = Variable x
+stepA (Function x e) = Function x (stepA e)
+stepA expr
+    | Application (Function x e1) e2 <- expr = case e2 of
+        Variable y -> reduce e1 x e2
+        Function y e3 -> reduce e1 x e2
+        Application e3 e4 -> Application (Function x e1) (stepA e2)
+    | Application e1 e2 <- expr = if stepA e1 == e1 then Application e1 (stepA e2)
+        else Application (stepA e1) e2
+        
 
 -- TODO 1.6. perform Applicative Evaluation
 reduceA :: Expr -> Expr
-reduceA = undefined
+reduceA expr
+    | stepA expr == expr = expr
+    | otherwise = reduceA (stepA expr)
 
 reduceAllA :: Expr -> [Expr]
-reduceAllA = undefined
+reduceAllA expr
+    | stepA expr == expr = [expr]
+    | otherwise = expr : reduceAllA (stepA expr)
 
 -- TODO 3.1. make substitutions into a expression with Macros
 evalMacros :: [(String, Expr)] -> Expr -> Expr
