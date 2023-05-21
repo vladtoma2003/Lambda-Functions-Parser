@@ -1,4 +1,5 @@
 import Data.List
+-- import Graphics.Win32.GDI.AlphaBlend (BLENDFUNCTION(alphaFormat))
 
 data Expr = Variable String
           | Function String Expr
@@ -50,21 +51,36 @@ ans = f "y" (a (f "x" vy) vy)
 
 alphabet = ['a'..'z']
 
+transformation :: [Char] -> [String]
+transformation xs = map (\x -> [x]) xs
+
+filterOut :: [String] -> [String] -> [String]
+filterOut xs ys = filter (\x -> not (elem x ys)) xs
+
 replace :: [String] -> Expr -> Expr
 replace freeVars e =
     case e of
         (Variable x) ->
-            if elem x freeVars then Variable ("a") else e
+            if elem x freeVars then Variable (head (filterOut (transformation alphabet) freeVars)) else e
         (Function x e1) ->
             if elem x freeVars then
                 let
-                    newVar = "a"
-                    newFreeVars = newVar : freeVars
+                    newVar = head (filterOut (transformation alphabet) freeVars)
+                    -- newFreeVars = newVar : freeVars
                 in
-                    Function newVar (replace newFreeVars e1)
+                    Function newVar (replace freeVars e1)
             else
                 Function x (replace freeVars e1)
         (Application e1 e2) ->
             Application (replace freeVars e1) (replace freeVars e2)
 
 o = f "x" (a vy (v "z"))
+p = f "y" (a (v "x") (v "z"))
+
+alfa = ['c'..'z']
+
+letters = concatMap (\n -> map (take n) $ tails ['a'..'z']) [1..]
+charList = concatMap (\n -> map (take n) $ tails ['a'..'z']) [1..]
+
+cv = concatMap (\n -> sequence (take n (tails ['a' .. 'z']))) [1..]
+
