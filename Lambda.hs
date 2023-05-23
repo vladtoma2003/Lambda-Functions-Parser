@@ -92,8 +92,19 @@ reduceAllA expr
 
 -- TODO 3.1. make substitutions into a expression with Macros
 evalMacros :: [(String, Expr)] -> Expr -> Expr
-evalMacros = undefined
+evalMacros l e =
+    case e of
+        (Macro x) -> case lookup x l of
+            Just e1 -> case e1 of
+                (Macro y) -> evalMacros l e1
+                _ -> evalMacros l e1
+            Nothing -> Macro x
+        (Variable x) -> Variable x
+        (Function x e1) -> Function x (evalMacros l e1)
+        (Application e1 e2) -> Application (evalMacros l e1) (evalMacros l e2)
+    
+    
 
 -- TODO 4.1. evaluate code sequence using given strategy
 evalCode :: (Expr -> Expr) -> [Code] -> [Expr]
-evalCode = undefined
+evalCode f e = undefined

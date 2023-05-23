@@ -41,7 +41,7 @@ instance Functor Parser where
 
 -- TODO 2.1. parse a expression
 parse_expr :: String -> Expr
-parse_expr cv = 
+parse_expr cv =
     case parse initialParser cv of
         Nothing -> error "parse error"
         Just (e, _) -> e
@@ -50,7 +50,7 @@ initialParser :: Parser Expr
 initialParser = applicationParser <|> atomParser
 
 atomParser :: Parser Expr
-atomParser = functionParser <|> variableParser <|> parenParser
+atomParser = functionParser <|> variableParser <|> macroParser <|> parenParser
 
 instance Alternative Parser where
     empty = Parser (const Nothing)
@@ -58,58 +58,56 @@ instance Alternative Parser where
                                 Nothing -> p2 s
                                 ok -> ok)
 
-charParser :: Char -> Parser Char
+charParser :: Char -> Parser Char -- luat din curs
 charParser c = Parser (\s ->
     case s of
         [] -> Nothing
         (x:xs) -> if x == c then Just (c, xs) else Nothing)
 
-predicateParser :: (Char -> Bool) -> Parser Char -- aplica o functie 
+predicateParser :: (Char -> Bool) -> Parser Char -- aplica o functie, luat din curs
 predicateParser p = Parser (\s ->
     case s of
         [] -> Nothing
         (x:xs) -> if p x then Just (x, xs) else Nothing)
 
-starParser :: Parser a -> Parser [a] -- asta
-starParser p = plusParser p <|> return []  -- <|> alternativa
 
-plusParser :: Parser a -> Parser [a]
-plusParser p =
-    do  x <- p
-        xs <- starParser p
-        return (x:xs)
-
-varParser :: Parser String -- asta
-varParser =
+valParser :: Parser String -- luat din curs, parseaza valori
+valParser =
     do  x <- predicateParser isAlpha
         xs <- many (predicateParser isAlphaNum)
         return (x:xs)
 
 variableParser :: Parser Expr
 variableParser =
-    do  x <- varParser
+    do  x <- valParser
         return (Variable x)
 
 functionParser :: Parser Expr
 functionParser =
     do  charParser '\\'
-        x <- varParser
+        x <- valParser
         charParser '.'
-        e <- initialParser
+        e <- atomParser
         return (Function x e)
 
 applicationParser :: Parser Expr
 applicationParser =
     do  e1 <- atomParser
-        rest <- many (charParser ' ' *> atomParser)
+        rest <- many (charParser ' ' *> atomParser) -- aplica de 0 sau mai multe ori parserele si returneaza o lista
         return (foldl Application e1 rest)
-    
-parenParser :: Parser Expr
+
+parenParser :: Parser Expr -- gaseste expresia dintre paranteze si cheama aplicationParser
 parenParser =
     do  charParser '('
         e <- applicationParser
         charParser ')'
         return e
+
+macroParser :: Parser Expr -- gaseste expresii de tip macro
+macroParser =
+    do  charParser '$'
+        x <- valParser
+        return (Macro x)
 
 -- TODO 4.2. parse code
 parse_code :: String -> Code
