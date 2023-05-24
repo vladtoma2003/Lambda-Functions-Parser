@@ -12,6 +12,7 @@ eval_code_test = do
     test_eq "eval multiple expressions" (evalCode reduceN p1) a1
     test_eq "eval override macro" (evalCode reduceN p2) a2 
     test_eq "eval numeric expressions" (evalCode reduceN p3) a3
+    test_eq "eval bonus test" (evalCode reduceN p4) a4
 
 parse_code_test :: Test ()
 parse_code_test = do
@@ -25,6 +26,6 @@ parse_code_test = do
 
 code_test :: IO ()
 code_test = do
-    putStrLn $ "3. Code"
-    test_suite "3.1. evaluate code" eval_code_test 10
-    test_suite "3.2. parse code" parse_code_test 5
+    putStrLn $ "4. Code"
+    test_suite "4.1. evaluate code" eval_code_test 10
+    test_suite "4.2. parse code" parse_code_test 5

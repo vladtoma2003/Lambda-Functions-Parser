@@ -15,6 +15,7 @@ free_vars =
         (Variable x) -> [x]
         (Function x e) -> delete x (free_vars e)
         (Application e1 e2) -> free_vars e1 `union` free_vars e2
+        (Macro x) -> [x]
 
 -- TODO 1.2. reduce a redex
 -- reduce e1 x e2 : inlocuieste x din e1 cu e2
@@ -41,6 +42,7 @@ reduce (Function y e) x e2
 reduce (Application e3 e4) x e2 =
             Application (reduce e3 x e2) (reduce e4 x e2)
 
+reduce (Macro y) x e2 = Macro y
 
 -- Normal Evaluation
 -- TODO 1.3. perform one step of Normal Evaluation (de la stanga la dreapta)
@@ -52,7 +54,7 @@ stepN expr
     | Application e1 e2 <- expr = 
         if stepN e1 == e1 then Application e1 (stepN e2) 
         else Application (stepN e1) e2
-        
+stepN (Macro x) = Macro x
 
 -- TODO 1.4. perform Normal Evaluation
 reduceN :: Expr -> Expr
@@ -77,7 +79,7 @@ stepA expr
         Application e3 e4 -> Application (Function x e1) (stepA e2)
     | Application e1 e2 <- expr = if stepA e1 == e1 then Application e1 (stepA e2)
         else Application (stepA e1) e2
-        
+stepA (Macro x) = Macro x
 
 -- TODO 1.6. perform Applicative Evaluation
 reduceA :: Expr -> Expr
@@ -107,4 +109,14 @@ evalMacros l e =
 
 -- TODO 4.1. evaluate code sequence using given strategy
 evalCode :: (Expr -> Expr) -> [Code] -> [Expr]
-evalCode f e = undefined
+evalCode strategy [] = []
+evalCode strategy ((Evaluate x):xs) = strategy (evalExpr strategy x) : evalCode strategy xs
+evalCode strategy ((Assign x e):xs) = evalCode (\e1 -> if e1 == Macro x then e else strategy e1) xs
+
+evalExpr :: (Expr -> Expr) -> Expr -> Expr
+evalExpr strategy e = 
+    case e of 
+        (Variable x) -> strategy (Variable x)
+        (Function x e1) -> Function x (evalExpr strategy e1)
+        (Application e1 e2) -> Application (evalExpr strategy e1) (evalExpr strategy e2)
+        (Macro x) -> strategy (Macro x)

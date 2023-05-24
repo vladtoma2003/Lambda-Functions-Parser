@@ -111,4 +111,25 @@ macroParser =
 
 -- TODO 4.2. parse code
 parse_code :: String -> Code
-parse_code = undefined
+parse_code input = 
+    case parse codeParser input of
+        Just (code, _) -> code
+        Nothing -> error "parse error"
+
+codeParser :: Parser Code
+codeParser = assignParser <|> evaluateParser
+
+assignParser :: Parser Code
+assignParser =
+    do  x <- valParser
+        many (charParser ' ')
+        charParser '='
+        many (charParser ' ')
+        e <- applicationParser
+        return (Assign x e)
+
+
+evaluateParser :: Parser Code
+evaluateParser =
+    do  e <- applicationParser
+        return (Evaluate e)

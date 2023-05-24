@@ -113,8 +113,17 @@ p3 = [ (Assign "two" (num 2))
      , (Evaluate (a (a mult (macro "two")) (macro "three")))
      ]
 
+p4 = [ (Assign "and" land)
+     , (Assign "true" ltrue)
+     , (Assign "false" lfalse)
+     , (Assign "not" lnot)
+     -- , (Evaluate (a (a (macro "and") (macro "true")) (macro "false")))
+     , (Evaluate (a (a (macro "and") (macro "true")) (a (macro "not") (macro "false"))))
+     ]
+
 -- expected answers
 a0 = [lfalse]
 a1 = [lfalse, ltrue]
 a2 = [lfalse, ltrue]
 a3 = [num 3, num 5, num 6]
+a4 = [ltrue]
