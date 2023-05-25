@@ -97,9 +97,7 @@ evalMacros :: [(String, Expr)] -> Expr -> Expr
 evalMacros l e =
     case e of
         (Macro x) -> case lookup x l of
-            Just e1 -> case e1 of
-                (Macro y) -> evalMacros l e1
-                _ -> evalMacros l e1
+            Just e1 -> evalMacros l e1
             Nothing -> Macro x
         (Variable x) -> Variable x
         (Function x e1) -> Function x (evalMacros l e1)
