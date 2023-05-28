@@ -81,7 +81,7 @@ stepA (Application e1 e2) =
             Function y e4 -> reduce e3 x e2
             -- pt aplicatii, reducerea aplicativa se face din interior spre 
             -- exterior deci intai expr din dreapta
-            Application e3 e4 -> Application (Function x e3) (stepA e2)
+            Application e4 e5 -> Application (Function x e3) (stepA e2)
         _ -> if stepA e1 == e1 then Application e1 (stepA e2)
             else Application (stepA e1) e2
 stepA (Macro x) = Macro x
