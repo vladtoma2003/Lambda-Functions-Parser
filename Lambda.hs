@@ -49,11 +49,11 @@ reduce (Macro y) x e2 = Macro y
 stepN :: Expr -> Expr
 stepN (Variable x) = Variable x
 stepN (Function x e) = Function x (stepN e) 
-stepN expr
-    | Application (Function x e1) e2 <- expr = reduce e1 x e2
-    | Application e1 e2 <- expr = 
-        if stepN e1 == e1 then Application e1 (stepN e2) 
-        else Application (stepN e1) e2
+stepN (Application e1 e2) = 
+        case e1 of
+            Function x e3 -> reduce e3 x e2
+            _ -> if stepN e1 == e1 then Application e1 (stepN e2)
+                else Application (stepN e1) e2
 stepN (Macro x) = Macro x
 
 -- TODO 1.4. perform Normal Evaluation
