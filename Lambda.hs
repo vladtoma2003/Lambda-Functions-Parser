@@ -62,6 +62,7 @@ reduceN expr
     | stepN expr == expr = expr
     | otherwise = reduceN (stepN expr)
 
+-- toti pasii de la reducere normala
 reduceAllN :: Expr -> [Expr]
 reduceAllN expr
     | stepN expr == expr = [expr]
@@ -72,13 +73,17 @@ reduceAllN expr
 stepA :: Expr -> Expr
 stepA (Variable x) = Variable x
 stepA (Function x e) = Function x (stepA e)
-stepA expr
-    | Application (Function x e1) e2 <- expr = case e2 of
-        Variable y -> reduce e1 x e2
-        Function y e3 -> reduce e1 x e2
-        Application e3 e4 -> Application (Function x e1) (stepA e2)
-    | Application e1 e2 <- expr = if stepA e1 == e1 then Application e1 (stepA e2)
-        else Application (stepA e1) e2
+stepA (Application e1 e2) = 
+    case e1 of
+        Function x e3 -> case e2 of
+            -- pt variabila si functie se reduce normal
+            Variable y -> reduce e3 x e2
+            Function y e4 -> reduce e3 x e2
+            -- pt aplicatii, reducerea aplicativa se face din interior spre 
+            -- exterior deci intai expr din dreapta
+            Application e3 e4 -> Application (Function x e3) (stepA e2)
+        _ -> if stepA e1 == e1 then Application e1 (stepA e2)
+            else Application (stepA e1) e2
 stepA (Macro x) = Macro x
 
 -- TODO 1.6. perform Applicative Evaluation
@@ -87,6 +92,7 @@ reduceA expr
     | stepA expr == expr = expr
     | otherwise = reduceA (stepA expr)
 
+-- trebuie toti pasii de la reducere aplicativa
 reduceAllA :: Expr -> [Expr]
 reduceAllA expr
     | stepA expr == expr = [expr]
@@ -96,6 +102,8 @@ reduceAllA expr
 evalMacros :: [(String, Expr)] -> Expr -> Expr
 evalMacros l e =
     case e of
+        -- caut in lista primita stringul x si daca il gasesc chem recursiv evalMacros(poate fi Macro (Macro x))
+        -- Daca nu este macro inseamna ca am gasit expresia la pasul anterior si returnez(asta la variabila)
         (Macro x) -> case lookup x l of
             Just e1 -> evalMacros l e1
             Nothing -> Macro x
@@ -108,13 +116,23 @@ evalMacros l e =
 -- TODO 4.1. evaluate code sequence using given strategy
 evalCode :: (Expr -> Expr) -> [Code] -> [Expr]
 evalCode strategy [] = []
-evalCode strategy ((Evaluate x):xs) = strategy (evalExpr strategy x) : evalCode strategy xs
-evalCode strategy ((Assign x e):xs) = evalCode (\e1 -> if e1 == Macro x then e else strategy e1) xs
+evalCode strategy (x:xs) =  
+    case x of
+        -- in evaluate se foloseste strategy de 2 ori: o data pt a traduce toate macrourile
+        -- de pana acum de la assign(interior) iar a doua oara pt a evalua expresia finala
+        -- folosind strategy original
+        Evaluate e ->  strategy (exprEval strategy e) : evalCode strategy xs
+        -- fac un fel de arbore pt totate macrourile de pana acum.
+        -- cand dau de un macro mai vechi, strategy-ul curent se va folosi de cel anterior si va merge
+        -- la macroul necesar.
+        Assign x e -> evalCode (\e1 -> if e1 == Macro x then e else strategy e1) xs
+        where 
+            -- evaluez expresia primita folosind strategy-ul cel mai de jos(care contine toate macrourile)
+            -- asta pt ca evaluate este la finalul testelor.
+            exprEval :: (Expr -> Expr) -> Expr -> Expr
+            exprEval strategy e = case e of
+                (Macro x) -> strategy (Macro x)
+                (Variable x) -> strategy (Variable x)
+                (Function x e1) -> Function x (exprEval strategy e1)
+                (Application e1 e2) -> Application (exprEval strategy e1) (exprEval strategy e2)
 
-evalExpr :: (Expr -> Expr) -> Expr -> Expr
-evalExpr strategy e = 
-    case e of 
-        (Variable x) -> strategy (Variable x)
-        (Function x e1) -> Function x (evalExpr strategy e1)
-        (Application e1 e2) -> Application (evalExpr strategy e1) (evalExpr strategy e2)
-        (Macro x) -> strategy (Macro x)

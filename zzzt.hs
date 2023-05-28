@@ -84,5 +84,6 @@ charList = concatMap (\n -> map (take n) $ tails ['a'..'z']) [1..]
 
 cv = concatMap (\n -> sequence (take n (tails ['a' .. 'z']))) [1..]
 
-
+cv2 = do n <- [1..]
+         n `replicate` ['a'..'z']
 

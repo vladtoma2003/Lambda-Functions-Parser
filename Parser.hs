@@ -58,7 +58,8 @@ instance Alternative Parser where
                                 Nothing -> p2 s
                                 ok -> ok)
 
-charParser :: Char -> Parser Char -- luat din curs
+-- parsez un caracter dat la intrare
+charParser :: Char -> Parser Char
 charParser c = Parser (\s ->
     case s of
         [] -> Nothing
@@ -77,11 +78,13 @@ valParser =
         xs <- many (predicateParser isAlphaNum)
         return (x:xs)
 
+-- Praser pentru Variable
 variableParser :: Parser Expr
 variableParser =
     do  x <- valParser
         return (Variable x)
 
+-- Parser pt Function
 functionParser :: Parser Expr
 functionParser =
     do  charParser '\\'
@@ -90,12 +93,14 @@ functionParser =
         e <- atomParser
         return (Function x e)
 
+-- Parser pt Application
 applicationParser :: Parser Expr
 applicationParser =
     do  e1 <- atomParser
         rest <- many (charParser ' ' *> atomParser) -- aplica de 0 sau mai multe ori parserele si returneaza o lista
         return (foldl Application e1 rest)
 
+-- Parser pt aplicatii care au paranteze (aplicatii interne)
 parenParser :: Parser Expr -- gaseste expresia dintre paranteze si cheama aplicationParser
 parenParser =
     do  charParser '('
@@ -103,6 +108,7 @@ parenParser =
         charParser ')'
         return e
 
+-- Parser pt Macro
 macroParser :: Parser Expr -- gaseste expresii de tip macro
 macroParser =
     do  charParser '$'
